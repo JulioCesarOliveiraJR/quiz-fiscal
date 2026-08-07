@@ -22,6 +22,10 @@ $ErrorActionPreference = 'Stop'
 
 function ConvertTo-Html([string]$md) {
   $t = $md.Trim()
+  # o plugin Spaced Repetition do Obsidian grava o agendamento no proprio .md
+  # como <!--SR:!2026-08-10,3,250--> ; fora daqui.
+  $t = [regex]::Replace($t, '<!--\s*SR:.*?-->', '')
+  $t = $t.Trim()
   # escapa HTML antes de reintroduzir a formatacao
   $t = $t -replace '&', '&amp;' -replace '<', '&lt;' -replace '>', '&gt;'
   $t = [regex]::Replace($t, '`([^`]+)`', '<code>$1</code>')
