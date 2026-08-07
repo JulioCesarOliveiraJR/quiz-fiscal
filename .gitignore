@@ -1,0 +1,4 @@
+# ferramentas locais — nao fazem parte do site publicado
+subir.ps1
+_fonte-artifact.html
+cloudflared.log

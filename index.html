@@ -1,0 +1,520 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<meta name="description" content="Quiz de revisao - Departamento Fiscal, Aula 1">
+<title>Quiz — Departamento Fiscal · Aula 1</title>
+
+<style>
+  :root {
+    --tinta:      #1E3A6E;
+    --tinta-fraca:#5B7099;
+    --rosa:       #D6246E;
+    --verde:      #2FBF9E;
+    --laranja:    #E8873A;
+    --papel:      #FAFAF8;
+    --fundo:      #EEF0F4;
+    --pauta:      #C9D4E2;
+    --anel:       #D3D8DF;
+    --borda:      #DFE4EC;
+    --sombra:     rgba(30, 58, 110, .10);
+
+    --sans: ui-sans-serif, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    --mono: ui-monospace, "Cascadia Mono", "Cascadia Code", Consolas, "SF Mono", Menlo, monospace;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --tinta:      #DCE6F5;
+      --tinta-fraca:#8DA1C4;
+      --rosa:       #FF7BAE;
+      --verde:      #4FD8B6;
+      --laranja:    #F2A059;
+      --papel:      #1B2430;
+      --fundo:      #121821;
+      --pauta:      #2A3646;
+      --anel:       #313D4E;
+      --borda:      #2B3746;
+      --sombra:     rgba(0, 0, 0, .40);
+    }
+  }
+  :root[data-theme="dark"] {
+    --tinta:      #DCE6F5;
+    --tinta-fraca:#8DA1C4;
+    --rosa:       #FF7BAE;
+    --verde:      #4FD8B6;
+    --laranja:    #F2A059;
+    --papel:      #1B2430;
+    --fundo:      #121821;
+    --pauta:      #2A3646;
+    --anel:       #313D4E;
+    --borda:      #2B3746;
+    --sombra:     rgba(0, 0, 0, .40);
+  }
+  :root[data-theme="light"] {
+    --tinta:      #1E3A6E;
+    --tinta-fraca:#5B7099;
+    --rosa:       #D6246E;
+    --verde:      #2FBF9E;
+    --laranja:    #E8873A;
+    --papel:      #FAFAF8;
+    --fundo:      #EEF0F4;
+    --pauta:      #C9D4E2;
+    --anel:       #D3D8DF;
+    --borda:      #DFE4EC;
+    --sombra:     rgba(30, 58, 110, .10);
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    padding: clamp(12px, 3vw, 40px) clamp(8px, 3vw, 24px);
+    background: var(--fundo);
+    font-family: var(--sans);
+    color: var(--tinta);
+    -webkit-font-smoothing: antialiased;
+    line-height: 1.6;
+  }
+
+  .folha {
+    max-width: 660px;
+    margin: 0 auto;
+    background: var(--papel);
+    border: 1px solid var(--borda);
+    border-radius: 3px;
+    box-shadow: 0 1px 2px var(--sombra), 0 12px 32px -18px var(--sombra);
+    display: grid;
+    grid-template-columns: 46px 1fr;
+    overflow: hidden;
+    background-image: repeating-linear-gradient(
+      to bottom, transparent 0 33px, var(--pauta) 33px 34px);
+    background-position: 0 8px;
+  }
+
+  .espiral {
+    background-image: radial-gradient(circle at 50% 50%, var(--anel) 0 4.5px, transparent 5px);
+    background-size: 100% 42px;
+    background-repeat: repeat-y;
+    background-position: 0 22px;
+    border-right: 1px solid var(--pauta);
+  }
+
+  .corpo {
+    padding: clamp(20px, 4vw, 34px) clamp(16px, 4vw, 34px) clamp(22px, 4vw, 32px);
+    min-width: 0;
+  }
+
+  /* ---------- papelada: rótulos monoespaçados ---------- */
+  .rotulo {
+    font-family: var(--mono);
+    font-size: 10.5px;
+    letter-spacing: .17em;
+    text-transform: uppercase;
+    color: var(--tinta-fraca);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .cabecalho { border-bottom: 1.5px solid var(--rosa); padding-bottom: 14px; margin-bottom: 22px; }
+  .cabecalho h1 {
+    font-size: clamp(21px, 4.4vw, 27px);
+    line-height: 1.2;
+    letter-spacing: -.019em;
+    font-weight: 680;
+    color: var(--rosa);
+    margin: 7px 0 0;
+    text-wrap: balance;
+  }
+  .subtitulo { font-size: 14px; color: var(--tinta-fraca); margin: 7px 0 0; max-width: 46ch; }
+
+  /* ---------- progresso: traço de marca-texto ---------- */
+  .progresso { display: flex; gap: 5px; margin-bottom: 26px; }
+  .passo {
+    flex: 1; height: 7px; border-radius: 1px 3px 2px 4px;
+    background: var(--pauta); position: relative; overflow: hidden;
+  }
+  .passo::after {
+    content: ""; position: absolute; inset: 0;
+    background: var(--laranja); opacity: .85;
+    transform: scaleX(0); transform-origin: left center;
+    transition: transform .4s cubic-bezier(.2,.8,.3,1);
+  }
+  .passo.feito::after { transform: scaleX(1); }
+
+  /* ---------- questão ---------- */
+  .numero { display: flex; align-items: baseline; gap: 9px; margin-bottom: 9px; }
+  .numero .tema {
+    font-family: var(--mono); font-size: 10.5px; letter-spacing: .13em;
+    text-transform: uppercase; color: var(--rosa);
+  }
+  .pergunta {
+    font-size: clamp(17px, 3.3vw, 19.5px);
+    line-height: 1.45; font-weight: 600; letter-spacing: -.012em;
+    margin: 0 0 20px; text-wrap: pretty;
+  }
+  .pergunta .valor { font-variant-numeric: tabular-nums; white-space: nowrap; }
+
+  .opcoes { display: flex; flex-direction: column; gap: 9px; }
+
+  .opcao {
+    position: relative; width: 100%; text-align: left;
+    font: inherit; font-size: 15.5px; line-height: 1.45;
+    color: var(--tinta); background: transparent;
+    border: 1.5px solid var(--borda); border-radius: 4px;
+    padding: 12px 14px 12px 40px;
+    cursor: pointer; transition: border-color .15s, background .15s, transform .1s;
+  }
+  .opcao .letra {
+    position: absolute; left: 14px; top: 12px;
+    font-family: var(--mono); font-size: 12.5px; font-weight: 600;
+    color: var(--tinta-fraca); transition: color .15s;
+  }
+  .opcao .texto { position: relative; z-index: 1; }
+
+  .opcao:hover:not(:disabled) { border-color: var(--tinta-fraca); background: color-mix(in srgb, var(--tinta) 4%, transparent); }
+  .opcao:active:not(:disabled) { transform: translateY(1px); }
+  .opcao:focus-visible { outline: 2.5px solid var(--laranja); outline-offset: 2px; }
+  .opcao:disabled { cursor: default; }
+
+  /* passada de marca-texto verde na correta */
+  .opcao.certa { border-color: var(--verde); }
+  .opcao.certa .letra { color: var(--verde); }
+  .opcao.certa::before {
+    content: ""; position: absolute; left: 34px; right: 8px; top: 9px; bottom: 9px;
+    background: var(--verde); opacity: .28;
+    border-radius: 2px 7px 3px 8px;
+    transform: scaleX(0); transform-origin: left center;
+    animation: marcar .45s cubic-bezier(.2,.85,.3,1) forwards;
+  }
+  @keyframes marcar { to { transform: scaleX(1); } }
+
+  .opcao.errada { border-color: color-mix(in srgb, var(--rosa) 55%, transparent); opacity: .72; }
+  .opcao.errada .texto { text-decoration: line-through; text-decoration-color: var(--rosa); text-decoration-thickness: 1.5px; }
+  .opcao.errada .letra { color: var(--rosa); }
+  .opcao.apagada { opacity: .42; }
+
+  /* ---------- explicação ---------- */
+  .explicacao {
+    margin-top: 20px; padding: 15px 17px;
+    border-left: 3px solid var(--rosa);
+    background: color-mix(in srgb, var(--rosa) 6%, transparent);
+    border-radius: 0 4px 4px 0;
+    animation: surgir .3s ease-out;
+  }
+  @keyframes surgir { from { opacity: 0; transform: translateY(-5px); } }
+  .veredito {
+    font-family: var(--mono); font-size: 11px; letter-spacing: .13em;
+    text-transform: uppercase; font-weight: 600; margin-bottom: 7px;
+  }
+  .veredito.acertou { color: var(--verde); }
+  .veredito.errou   { color: var(--rosa); }
+  .explicacao p { margin: 0; font-size: 14.5px; line-height: 1.62; }
+  .explicacao p + p { margin-top: 9px; }
+  .explicacao strong { font-weight: 660; }
+  .explicacao .valor { font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .fonte { display: block; margin-top: 11px; font-family: var(--mono); font-size: 10.5px;
+           letter-spacing: .1em; text-transform: uppercase; color: var(--tinta-fraca); }
+
+  /* ---------- botões ---------- */
+  .acoes { margin-top: 22px; display: flex; justify-content: flex-end; }
+  .botao {
+    font: inherit; font-size: 14.5px; font-weight: 600;
+    color: var(--papel); background: var(--tinta);
+    border: none; border-radius: 4px; padding: 11px 22px; cursor: pointer;
+    transition: opacity .15s, transform .1s;
+  }
+  .botao:hover { opacity: .87; }
+  .botao:active { transform: translateY(1px); }
+  .botao:focus-visible { outline: 2.5px solid var(--laranja); outline-offset: 2px; }
+  .botao.vazado { background: transparent; color: var(--tinta); border: 1.5px solid var(--borda); }
+  .botao.vazado:hover { border-color: var(--tinta-fraca); opacity: 1; }
+
+  /* ---------- resultado ---------- */
+  .placar { text-align: center; padding: 6px 0 4px; }
+  .placar .nota {
+    font-family: var(--mono); font-size: clamp(46px, 12vw, 62px); font-weight: 700;
+    line-height: 1; letter-spacing: -.04em; color: var(--rosa);
+    font-variant-numeric: tabular-nums;
+  }
+  .placar .de { font-size: .42em; color: var(--tinta-fraca); font-weight: 500; }
+  .placar .recado { font-size: 15.5px; margin: 13px auto 0; max-width: 40ch; text-wrap: pretty; }
+
+  .revisao { margin-top: 28px; border-top: 1.5px solid var(--borda); padding-top: 18px; }
+  .revisao ol { list-style: none; margin: 12px 0 0; padding: 0; display: flex; flex-direction: column; gap: 2px; }
+  .revisao li { display: flex; align-items: baseline; gap: 11px; padding: 7px 0; font-size: 14.5px; border-bottom: 1px solid var(--borda); }
+  .revisao li:last-child { border-bottom: none; }
+  .marca { font-family: var(--mono); font-size: 13px; font-weight: 700; flex: none; width: 1.2em; }
+  .marca.ok  { color: var(--verde); }
+  .marca.nao { color: var(--rosa); }
+  .revisao .tema-nome { flex: 1; }
+  .revisao .pag { font-family: var(--mono); font-size: 10.5px; letter-spacing: .08em;
+                  text-transform: uppercase; color: var(--tinta-fraca); flex: none; }
+
+  .rodape {
+    max-width: 660px; margin: 16px auto 0; text-align: center;
+    font-family: var(--mono); font-size: 10.5px; letter-spacing: .11em;
+    text-transform: uppercase; color: var(--tinta-fraca);
+  }
+
+  @media (max-width: 480px) {
+    .folha { grid-template-columns: 26px 1fr; }
+    .espiral { background-size: 100% 36px; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; }
+    .opcao.certa::before { transform: scaleX(1); }
+    .passo.feito::after  { transform: scaleX(1); }
+  }
+</style>
+</head>
+<body>
+<main class="folha">
+  <div class="espiral" aria-hidden="true"></div>
+
+  <div class="corpo">
+    <header class="cabecalho">
+      <div class="rotulo">Curso Departamento Fiscal · Aula 1 · 01/08/26</div>
+      <h1>Quiz de revisão</h1>
+      <p class="subtitulo">Cinco questões sobre constituição de empresa e tributos. Responda e veja a explicação de cada uma na hora.</p>
+    </header>
+
+    <div class="progresso" id="progresso" role="progressbar" aria-label="Progresso do quiz" aria-valuemin="0" aria-valuemax="5" aria-valuenow="0"></div>
+
+    <div id="palco" aria-live="polite"></div>
+  </div>
+</main>
+
+<p class="rodape">5 questões · feito a partir do caderno</p>
+
+<script>
+  const QUESTOES = [
+    {
+      tema: "Reforma tributária",
+      pag: "pág. 11",
+      pergunta: "Na reforma tributária, o IBS (Imposto sobre Bens e Serviços) vai substituir quais impostos?",
+      opcoes: [
+        "PIS e COFINS",
+        "ICMS e ISS",
+        "ICMS e IPI",
+        "ISS e IPI"
+      ],
+      certa: 1,
+      explicacao: [
+        "O <strong>IBS junta o ICMS</strong> (estadual) <strong>e o ISS</strong> (municipal) — por isso ele é o imposto <strong>compartilhado entre estados e municípios</strong>.",
+        "Quem substitui <strong>PIS e COFINS</strong> é a <strong>CBS</strong>, que é federal. Macete: <strong>I</strong> de IBS = <strong>I</strong>mposto → estados e municípios. <strong>C</strong> de CBS = <strong>C</strong>ontribuição → federal, porque PIS e COFINS eram contribuições."
+      ]
+    },
+    {
+      tema: "Abertura de empresa",
+      pag: "págs. 10-11",
+      pergunta: "Uma empresa acabou de escolher o CNAE e fazer o processo pela REDESIM. Qual é o próximo passo?",
+      opcoes: [
+        "A Receita Federal emite o CNPJ",
+        "A empresa é registrada na JUCESP",
+        "A empresa é cadastrada no CADESP",
+        "A empresa recebe a Inscrição Estadual"
+      ],
+      certa: 1,
+      explicacao: [
+        "A ordem é <strong>CNAE → REDESIM → JUCESP → CNPJ → CADESP/IE</strong>.",
+        "É na <strong>Junta Comercial</strong> que a empresa <strong>passa a existir juridicamente</strong> — só depois disso a Receita Federal emite o CNPJ. Primeiro ela existe, depois ganha documento."
+      ]
+    },
+    {
+      tema: "Crédito tributário",
+      pag: "pág. 16",
+      pergunta: "Uma papelaria compra material da fábrica por <span class=\"valor\">R$ 8.000,00</span> e revende por <span class=\"valor\">R$ 12.000,00</span>. Com IBS + CBS de 20%, quanto ela paga de imposto?",
+      opcoes: [
+        "R$ 2.400,00",
+        "R$ 1.600,00",
+        "R$ 800,00",
+        "R$ 4.000,00"
+      ],
+      certa: 2,
+      explicacao: [
+        "<strong>Crédito</strong> da compra: 20% de <span class=\"valor\">8.000</span> = <span class=\"valor\">R$ 1.600</span>. <strong>Débito</strong> da venda: 20% de <span class=\"valor\">12.000</span> = <span class=\"valor\">R$ 2.400</span>. Ela paga a diferença: <span class=\"valor\">2.400 − 1.600 = <strong>R$ 800</strong></span>.",
+        "Repare que <span class=\"valor\">R$ 800</span> é exatamente <strong>20% da margem</strong> (<span class=\"valor\">12.000 − 8.000 = 4.000</span>). É esse o ponto do crédito: o imposto incide só sobre <strong>o valor que a empresa acrescentou</strong>. Mesmo raciocínio da Loja de Roupas."
+      ]
+    },
+    {
+      tema: "Cadastros",
+      pag: "pág. 10",
+      pergunta: "Qual a diferença entre NIRE e CNPJ?",
+      opcoes: [
+        "NIRE identifica o registro na Junta Comercial; CNPJ identifica a empresa na Receita Federal",
+        "NIRE é da Receita Federal; CNPJ é da Junta Comercial",
+        "NIRE é para empresa de serviço; CNPJ é para comércio",
+        "São a mesma coisa, só muda o estado que emite"
+      ],
+      certa: 0,
+      explicacao: [
+        "<strong>NIRE</strong> = o <em>“registro de nascimento”</em> da empresa na <strong>Junta Comercial</strong> (estadual). <strong>CNPJ</strong> = o <em>“documento de identificação perante o governo federal”</em>, emitido pela <strong>Receita Federal</strong>.",
+        "Hoje o NIRE perdeu importância prática por causa da integração dos sistemas, mas <strong>toda</strong> empresa registrada em Junta Comercial recebe um — inclusive as abertas agora."
+      ]
+    },
+    {
+      tema: "Pegadinha",
+      pag: "pág. 8",
+      pergunta: "Um escritório de advocacia precisa de Inscrição Estadual e de cadastro no CADESP?",
+      opcoes: [
+        "Sim, toda empresa precisa",
+        "Não, porque presta só serviço e recolhe ISS, que é municipal",
+        "Sim, porque fica no Estado de São Paulo",
+        "Não, porque advogados são isentos de imposto"
+      ],
+      certa: 1,
+      explicacao: [
+        "CADESP e IE existem por causa do <strong>ICMS</strong>, que incide sobre <strong>mercadoria</strong>. Quem só presta serviço recolhe <strong>ISS</strong>, que é <strong>municipal</strong> — e por isso não precisa de nenhum dos dois.",
+        "Regra prática: <strong>mercadoria → ICMS → precisa de IE</strong>. <strong>Serviço → ISS → não precisa.</strong> Cuidado com a última alternativa: não é isenção, é <strong>imposto diferente</strong>."
+      ]
+    }
+  ];
+
+  const LETRAS = ["A", "B", "C", "D"];
+  const palco = document.getElementById("palco");
+  const barra = document.getElementById("progresso");
+
+  let atual = 0;
+  const respostas = [];
+
+  for (let i = 0; i < QUESTOES.length; i++) {
+    const p = document.createElement("div");
+    p.className = "passo";
+    barra.appendChild(p);
+  }
+
+  function pintarProgresso(n) {
+    [...barra.children].forEach((p, i) => p.classList.toggle("feito", i < n));
+    barra.setAttribute("aria-valuenow", String(n));
+  }
+
+  function mostrarQuestao() {
+    const q = QUESTOES[atual];
+    palco.innerHTML = "";
+
+    const cab = document.createElement("div");
+    cab.className = "numero";
+    cab.innerHTML =
+      '<span class="rotulo">Questão ' + String(atual + 1).padStart(2, "0") + "/05</span>" +
+      '<span class="tema">' + q.tema + "</span>";
+    palco.appendChild(cab);
+
+    const perg = document.createElement("h2");
+    perg.className = "pergunta";
+    perg.innerHTML = q.pergunta;
+    palco.appendChild(perg);
+
+    const lista = document.createElement("div");
+    lista.className = "opcoes";
+    q.opcoes.forEach((texto, i) => {
+      const b = document.createElement("button");
+      b.className = "opcao";
+      b.type = "button";
+      b.innerHTML = '<span class="letra">' + LETRAS[i] + '</span><span class="texto">' + texto + "</span>";
+      b.addEventListener("click", () => responder(i, lista));
+      lista.appendChild(b);
+    });
+    palco.appendChild(lista);
+  }
+
+  function responder(escolha, lista) {
+    const q = QUESTOES[atual];
+    const acertou = escolha === q.certa;
+    respostas[atual] = acertou;
+
+    [...lista.children].forEach((b, i) => {
+      b.disabled = true;
+      if (i === q.certa) b.classList.add("certa");
+      else if (i === escolha) b.classList.add("errada");
+      else b.classList.add("apagada");
+    });
+
+    const cx = document.createElement("div");
+    cx.className = "explicacao";
+    cx.innerHTML =
+      '<div class="veredito ' + (acertou ? "acertou" : "errou") + '">' +
+        (acertou ? "Isso mesmo" : "Não é essa") + "</div>" +
+      q.explicacao.map(t => "<p>" + t + "</p>").join("") +
+      '<span class="fonte">Caderno · ' + q.pag + "</span>";
+    palco.appendChild(cx);
+
+    const acoes = document.createElement("div");
+    acoes.className = "acoes";
+    const btn = document.createElement("button");
+    btn.className = "botao";
+    btn.type = "button";
+    btn.textContent = atual < QUESTOES.length - 1 ? "Próxima questão" : "Ver resultado";
+    btn.addEventListener("click", avancar);
+    acoes.appendChild(btn);
+    palco.appendChild(acoes);
+
+    pintarProgresso(atual + 1);
+    btn.focus();
+  }
+
+  function avancar() {
+    atual++;
+    if (atual < QUESTOES.length) mostrarQuestao();
+    else mostrarResultado();
+  }
+
+  function mostrarResultado() {
+    const acertos = respostas.filter(Boolean).length;
+    const recados = [
+      "Vale reler o MOC da matéria antes da prova — a sequência de abertura amarra quase tudo.",
+      "Dá pra subir bastante revisando os flashcards. Refaz depois de estudar.",
+      "Metade do caminho. Foca no que errou e refaz.",
+      "Bom domínio. Revisa os dois que escaparam e tá pronta.",
+      "Quase tudo. Só um detalhe escapou.",
+      "Gabaritou. Pode ir tranquila pra prova."
+    ];
+
+    palco.innerHTML = "";
+
+    const placar = document.createElement("div");
+    placar.className = "placar";
+    placar.innerHTML =
+      '<div class="rotulo">Resultado</div>' +
+      '<div class="nota">' + acertos + '<span class="de">/5</span></div>' +
+      '<p class="recado">' + recados[acertos] + "</p>";
+    palco.appendChild(placar);
+
+    const rev = document.createElement("div");
+    rev.className = "revisao";
+    rev.innerHTML = '<div class="rotulo">O que revisar</div>';
+    const ol = document.createElement("ol");
+    QUESTOES.forEach((q, i) => {
+      const li = document.createElement("li");
+      li.innerHTML =
+        '<span class="marca ' + (respostas[i] ? "ok" : "nao") + '">' + (respostas[i] ? "✓" : "✕") + "</span>" +
+        '<span class="tema-nome">' + q.tema + "</span>" +
+        '<span class="pag">' + q.pag + "</span>";
+      ol.appendChild(li);
+    });
+    rev.appendChild(ol);
+    palco.appendChild(rev);
+
+    const acoes = document.createElement("div");
+    acoes.className = "acoes";
+    const btn = document.createElement("button");
+    btn.className = "botao vazado";
+    btn.type = "button";
+    btn.textContent = "Refazer o quiz";
+    btn.addEventListener("click", () => {
+      atual = 0;
+      respostas.length = 0;
+      pintarProgresso(0);
+      mostrarQuestao();
+    });
+    acoes.appendChild(btn);
+    palco.appendChild(acoes);
+  }
+
+  mostrarQuestao();
+</script>
+
+</body>
+</html>
