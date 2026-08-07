@@ -1,0 +1,441 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<meta name="description" content="Flashcards com repeticao espacada - vault de estudos">
+<title>Cards de estudo — repetição espaçada</title>
+
+<style>
+  :root {
+    --tinta:#1E3A6E; --tinta-fraca:#5B7099; --rosa:#D6246E; --verde:#2FBF9E;
+    --laranja:#E8873A; --papel:#FAFAF8; --fundo:#EEF0F4; --pauta:#C9D4E2;
+    --anel:#D3D8DF; --borda:#DFE4EC; --sombra:rgba(30,58,110,.10);
+    --sans: ui-sans-serif, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    --mono: ui-monospace, "Cascadia Mono", "Cascadia Code", Consolas, "SF Mono", Menlo, monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root { --tinta:#DCE6F5; --tinta-fraca:#8DA1C4; --rosa:#FF7BAE; --verde:#4FD8B6;
+      --laranja:#F2A059; --papel:#1B2430; --fundo:#121821; --pauta:#2A3646;
+      --anel:#313D4E; --borda:#2B3746; --sombra:rgba(0,0,0,.40); }
+  }
+  :root[data-theme="dark"] { --tinta:#DCE6F5; --tinta-fraca:#8DA1C4; --rosa:#FF7BAE;
+    --verde:#4FD8B6; --laranja:#F2A059; --papel:#1B2430; --fundo:#121821;
+    --pauta:#2A3646; --anel:#313D4E; --borda:#2B3746; --sombra:rgba(0,0,0,.40); }
+  :root[data-theme="light"] { --tinta:#1E3A6E; --tinta-fraca:#5B7099; --rosa:#D6246E;
+    --verde:#2FBF9E; --laranja:#E8873A; --papel:#FAFAF8; --fundo:#EEF0F4;
+    --pauta:#C9D4E2; --anel:#D3D8DF; --borda:#DFE4EC; --sombra:rgba(30,58,110,.10); }
+
+  * { box-sizing: border-box; }
+  body {
+    margin:0; padding: clamp(12px,3vw,40px) clamp(8px,3vw,24px);
+    background: var(--fundo); font-family: var(--sans); color: var(--tinta);
+    -webkit-font-smoothing: antialiased; line-height: 1.6;
+  }
+
+  .folha {
+    max-width: 660px; margin: 0 auto; background: var(--papel);
+    border: 1px solid var(--borda); border-radius: 3px;
+    box-shadow: 0 1px 2px var(--sombra), 0 12px 32px -18px var(--sombra);
+    display: grid; grid-template-columns: 46px 1fr; overflow: hidden;
+    background-image: repeating-linear-gradient(to bottom, transparent 0 33px, var(--pauta) 33px 34px);
+    background-position: 0 8px;
+  }
+  .espiral {
+    background-image: radial-gradient(circle at 50% 50%, var(--anel) 0 4.5px, transparent 5px);
+    background-size: 100% 42px; background-repeat: repeat-y; background-position: 0 22px;
+    border-right: 1px solid var(--pauta);
+  }
+  .corpo { padding: clamp(20px,4vw,34px) clamp(16px,4vw,34px) clamp(22px,4vw,32px); min-width: 0; }
+
+  .rotulo {
+    font-family: var(--mono); font-size: 10.5px; letter-spacing:.17em;
+    text-transform: uppercase; color: var(--tinta-fraca); font-variant-numeric: tabular-nums;
+  }
+  .cabecalho { border-bottom: 1.5px solid var(--rosa); padding-bottom: 14px; margin-bottom: 20px; }
+  .cabecalho h1 {
+    font-size: clamp(21px,4.4vw,27px); line-height:1.2; letter-spacing:-.019em;
+    font-weight: 680; color: var(--rosa); margin: 7px 0 0; text-wrap: balance;
+  }
+  .subtitulo { font-size: 14px; color: var(--tinta-fraca); margin: 7px 0 0; max-width: 48ch; }
+
+  /* ---------- seleção de matéria ---------- */
+  .materias { display: flex; flex-direction: column; gap: 7px; margin-top: 6px; }
+  .materia {
+    display: flex; align-items: center; gap: 12px; width: 100%; text-align: left;
+    font: inherit; font-size: 15px; color: var(--tinta); background: transparent;
+    border: 1.5px solid var(--borda); border-radius: 4px; padding: 12px 14px;
+    cursor: pointer; transition: border-color .15s, background .15s;
+  }
+  .materia:hover { border-color: var(--tinta-fraca); background: color-mix(in srgb, var(--tinta) 4%, transparent); }
+  .materia:focus-visible { outline: 2.5px solid var(--laranja); outline-offset: 2px; }
+  .materia .nome { flex: 1; font-weight: 560; }
+  .materia .contas {
+    font-family: var(--mono); font-size: 11px; letter-spacing:.06em;
+    color: var(--tinta-fraca); font-variant-numeric: tabular-nums; flex: none;
+  }
+  .materia .vencidos { color: var(--laranja); font-weight: 700; }
+  .materia.tudo { border-color: var(--tinta-fraca); border-style: dashed; }
+
+  /* ---------- card ---------- */
+  .painel {
+    display: flex; align-items: baseline; justify-content: space-between;
+    gap: 12px; margin-bottom: 16px; flex-wrap: wrap;
+  }
+  .barra { height: 7px; background: var(--pauta); border-radius: 1px 3px 2px 4px; overflow: hidden; margin-bottom: 22px; }
+  .barra > i {
+    display: block; height: 100%; width: 0; background: var(--laranja); opacity:.85;
+    transition: width .35s cubic-bezier(.2,.8,.3,1);
+  }
+
+  .secao { font-family: var(--mono); font-size:10.5px; letter-spacing:.13em; text-transform: uppercase; color: var(--rosa); }
+
+  .card {
+    border: 1.5px solid var(--borda); border-radius: 5px;
+    padding: clamp(18px,4vw,26px); background: color-mix(in srgb, var(--tinta) 2.5%, transparent);
+    min-height: 150px; display: flex; flex-direction: column; justify-content: center;
+  }
+  .frente { font-size: clamp(17px,3.4vw,20px); line-height:1.45; font-weight: 600; letter-spacing:-.012em; text-wrap: pretty; }
+  .verso {
+    margin-top: 18px; padding-top: 16px; border-top: 1.5px dashed var(--pauta);
+    font-size: 15.5px; line-height: 1.62; animation: surgir .25s ease-out;
+  }
+  @keyframes surgir { from { opacity:0; transform: translateY(-4px); } }
+  .verso strong { font-weight: 660; }
+  .verso code { font-family: var(--mono); font-size:.9em; background: color-mix(in srgb, var(--tinta) 8%, transparent); padding:1px 5px; border-radius:3px; }
+
+  .dica { text-align: center; margin-top: 16px; font-family: var(--mono); font-size: 10.5px; letter-spacing:.11em; text-transform: uppercase; color: var(--tinta-fraca); }
+
+  /* ---------- botões ---------- */
+  .acoes { margin-top: 18px; display: flex; gap: 8px; }
+  .botao {
+    flex: 1; font: inherit; font-size: 14.5px; font-weight: 600;
+    color: var(--papel); background: var(--tinta); border: none; border-radius: 4px;
+    padding: 13px 16px; cursor: pointer; transition: opacity .15s, transform .1s;
+  }
+  .botao:hover { opacity:.87; } .botao:active { transform: translateY(1px); }
+  .botao:focus-visible { outline: 2.5px solid var(--laranja); outline-offset: 2px; }
+  .botao .tecla { display:block; font-family: var(--mono); font-size:10px; letter-spacing:.1em; opacity:.65; font-weight:500; margin-top:2px; }
+  .botao.errei  { background: var(--rosa); }
+  .botao.quase  { background: var(--laranja); }
+  .botao.sabia  { background: var(--verde); color: #08312a; }
+  :root[data-theme="dark"] .botao.sabia, .botao.sabia { }
+  .botao.vazado { background: transparent; color: var(--tinta); border: 1.5px solid var(--borda); flex: none; padding: 10px 18px; font-size: 13.5px; }
+  .botao.vazado:hover { border-color: var(--tinta-fraca); opacity:1; }
+
+  /* ---------- fim de sessão ---------- */
+  .fim { text-align: center; padding: 10px 0; }
+  .fim .nota { font-family: var(--mono); font-size: clamp(42px,11vw,58px); font-weight:700; line-height:1; letter-spacing:-.04em; color: var(--verde); }
+  .fim p { font-size: 15.5px; margin: 14px auto 0; max-width: 42ch; text-wrap: pretty; }
+
+  .placar { margin-top: 24px; border-top: 1.5px solid var(--borda); padding-top: 16px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+  .caixa { text-align: center; }
+  .caixa .n { font-family: var(--mono); font-size: 22px; font-weight: 700; font-variant-numeric: tabular-nums; }
+  .caixa .l { font-family: var(--mono); font-size:9.5px; letter-spacing:.11em; text-transform: uppercase; color: var(--tinta-fraca); }
+  .caixa.novo .n     { color: var(--tinta-fraca); }
+  .caixa.aprend .n   { color: var(--laranja); }
+  .caixa.domin .n    { color: var(--verde); }
+
+  .rodape { max-width: 660px; margin: 16px auto 0; display:flex; justify-content:space-between; gap:12px; flex-wrap:wrap;
+            font-family: var(--mono); font-size:10.5px; letter-spacing:.11em; text-transform: uppercase; color: var(--tinta-fraca); }
+  .rodape a { color: inherit; }
+  .rodape button { font: inherit; letter-spacing: inherit; text-transform: inherit; color: inherit;
+                   background: none; border: none; padding: 0; cursor: pointer; text-decoration: underline; }
+
+  @media (max-width: 480px) {
+    .folha { grid-template-columns: 26px 1fr; }
+    .espiral { background-size: 100% 36px; }
+    .acoes { flex-direction: column; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { animation-duration:.01ms !important; transition-duration:.01ms !important; }
+  }
+</style>
+</head>
+<body>
+
+<main class="folha">
+  <div class="espiral" aria-hidden="true"></div>
+  <div class="corpo">
+    <header class="cabecalho">
+      <div class="rotulo" id="topo-rotulo">Vault de estudos</div>
+      <h1 id="topo-titulo">Cards de revisão</h1>
+      <p class="subtitulo" id="topo-sub">Repetição espaçada: o card que você acerta demora mais para voltar; o que erra volta logo.</p>
+    </header>
+    <div id="palco" aria-live="polite"></div>
+  </div>
+</main>
+
+<div class="rodape">
+  <span id="rodape-info">219 cards · progresso salvo neste navegador</span>
+  <span><a href="../">← quiz da aula 1</a></span>
+</div>
+
+<script>
+// ---- Leitner: nivel -> dias ate voltar ----
+const INTERVALOS = [0, 1, 3, 7, 16, 35];
+const NIVEL_MAX  = INTERVALOS.length - 1;
+const CHAVE      = "faculmaria.cards.v1";
+
+const palco       = document.getElementById("palco");
+const topoRotulo  = document.getElementById("topo-rotulo");
+const topoTitulo  = document.getElementById("topo-titulo");
+const topoSub     = document.getElementById("topo-sub");
+const rodapeInfo  = document.getElementById("rodape-info");
+
+let BASE = [];        // [{materia, cards:[{p,r,s,id}]}]
+let progresso = {};   // id -> {n: nivel, q: timestamp da proxima revisao}
+let fila = [], atual = null, revelado = false, feitosNaSessao = 0, totalDaSessao = 0;
+
+function hoje() { const d = new Date(); d.setHours(0,0,0,0); return d.getTime(); }
+function emDias(n) { return hoje() + n * 86400000; }
+
+function idDe(materia, p) {
+  let h = 5381;
+  const s = materia + "|" + p;
+  for (let i = 0; i < s.length; i++) h = ((h << 5) + h + s.charCodeAt(i)) >>> 0;
+  return h.toString(36);
+}
+
+function carregar() {
+  try { progresso = JSON.parse(localStorage.getItem(CHAVE)) || {}; }
+  catch (e) { progresso = {}; }
+}
+function salvar() {
+  try { localStorage.setItem(CHAVE, JSON.stringify(progresso)); } catch (e) {}
+}
+
+function estado(id) {
+  const e = progresso[id];
+  if (!e) return "novo";
+  if (e.n >= NIVEL_MAX) return "dominado";
+  return "aprendendo";
+}
+function venceu(id) {
+  const e = progresso[id];
+  if (!e) return true;                 // nunca visto = disponivel
+  return e.q <= hoje();
+}
+
+function contar(cards) {
+  let novo = 0, aprend = 0, domin = 0, devidos = 0;
+  cards.forEach(c => {
+    const s = estado(c.id);
+    if (s === "novo") novo++; else if (s === "dominado") domin++; else aprend++;
+    if (venceu(c.id)) devidos++;
+  });
+  return { novo, aprend, domin, devidos, total: cards.length };
+}
+
+// ---------------- telas ----------------
+
+function telaMaterias() {
+  atual = null;
+  topoRotulo.textContent = "Vault de estudos";
+  topoTitulo.textContent = "Cards de revisão";
+  topoSub.textContent = "Repetição espaçada: o card que você acerta demora mais para voltar; o que erra volta logo.";
+
+  palco.innerHTML = '<div class="rotulo">Escolha a matéria</div>';
+  const lista = document.createElement("div");
+  lista.className = "materias";
+
+  const todos = BASE.flatMap(m => m.cards);
+  lista.appendChild(botaoMateria("Todas as matérias", todos, null, true));
+  BASE.forEach(m => lista.appendChild(botaoMateria(m.materia, m.cards, m.materia, false)));
+  palco.appendChild(lista);
+
+  const g = contar(todos);
+  const placar = document.createElement("div");
+  placar.className = "placar";
+  placar.innerHTML =
+    '<div class="caixa novo"><div class="n">'   + g.novo   + '</div><div class="l">novos</div></div>' +
+    '<div class="caixa aprend"><div class="n">' + g.aprend + '</div><div class="l">aprendendo</div></div>' +
+    '<div class="caixa domin"><div class="n">'  + g.domin  + '</div><div class="l">dominados</div></div>';
+  palco.appendChild(placar);
+}
+
+function botaoMateria(rotulo, cards, filtro, ehTudo) {
+  const c = contar(cards);
+  const b = document.createElement("button");
+  b.className = "materia" + (ehTudo ? " tudo" : "");
+  b.type = "button";
+  b.innerHTML =
+    '<span class="nome">' + rotulo + '</span>' +
+    '<span class="contas">' +
+      (c.devidos ? '<span class="vencidos">' + c.devidos + ' p/ hoje</span> · ' : 'em dia · ') +
+      c.total + ' cards</span>';
+  b.addEventListener("click", () => iniciar(filtro, rotulo));
+  return b;
+}
+
+function iniciar(filtro, rotulo) {
+  const cards = filtro ? BASE.find(m => m.materia === filtro).cards : BASE.flatMap(m => m.cards);
+  fila = cards.filter(c => venceu(c.id));
+  for (let i = fila.length - 1; i > 0; i--) {           // embaralha
+    const j = Math.floor(Math.random() * (i + 1));
+    [fila[i], fila[j]] = [fila[j], fila[i]];
+  }
+  feitosNaSessao = 0;
+  totalDaSessao = fila.length;
+  topoRotulo.textContent = rotulo;
+  topoTitulo.textContent = "Revisão de hoje";
+  topoSub.textContent = "";
+  if (!fila.length) return telaEmDia(rotulo);
+  proximo();
+}
+
+function telaEmDia(rotulo) {
+  palco.innerHTML =
+    '<div class="fim"><div class="rotulo">Tudo em dia</div>' +
+    '<div class="nota">✓</div>' +
+    '<p>Nenhum card de <strong>' + rotulo + '</strong> vence hoje. Volte amanhã — ou escolha outra matéria.</p></div>';
+  const acoes = document.createElement("div");
+  acoes.className = "acoes";
+  acoes.style.justifyContent = "center";
+  acoes.appendChild(botaoVoltar());
+  palco.appendChild(acoes);
+}
+
+function proximo() {
+  if (!fila.length) return telaFim();
+  atual = fila[0];
+  revelado = false;
+  desenhar();
+}
+
+function desenhar() {
+  palco.innerHTML = "";
+
+  const painel = document.createElement("div");
+  painel.className = "painel";
+  painel.innerHTML =
+    '<span class="secao">' + (atual.s || "—") + '</span>' +
+    '<span class="rotulo">' + (feitosNaSessao + 1) + " de " + totalDaSessao + "</span>";
+  palco.appendChild(painel);
+
+  const barra = document.createElement("div");
+  barra.className = "barra";
+  const i = document.createElement("i");
+  i.style.width = (totalDaSessao ? (feitosNaSessao / totalDaSessao) * 100 : 0) + "%";
+  barra.appendChild(i);
+  palco.appendChild(barra);
+
+  const card = document.createElement("div");
+  card.className = "card";
+  card.innerHTML = '<div class="frente">' + atual.p + "</div>" +
+                   (revelado ? '<div class="verso">' + atual.r + "</div>" : "");
+  palco.appendChild(card);
+
+  const acoes = document.createElement("div");
+  acoes.className = "acoes";
+
+  if (!revelado) {
+    const b = document.createElement("button");
+    b.className = "botao";
+    b.type = "button";
+    b.innerHTML = 'Ver resposta<span class="tecla">espaço</span>';
+    b.addEventListener("click", revelar);
+    acoes.appendChild(b);
+    palco.appendChild(acoes);
+    const d = document.createElement("p");
+    d.className = "dica";
+    d.textContent = "tente responder antes de virar";
+    palco.appendChild(d);
+    b.focus();
+  } else {
+    [["errei","Errei","1"],["quase","Quase","2"],["sabia","Sabia","3"]].forEach(([cls, txt, tecla], idx) => {
+      const b = document.createElement("button");
+      b.className = "botao " + cls;
+      b.type = "button";
+      b.innerHTML = txt + '<span class="tecla">' + tecla + "</span>";
+      b.addEventListener("click", () => responder(idx));
+      acoes.appendChild(b);
+    });
+    palco.appendChild(acoes);
+    acoes.firstChild.focus();
+  }
+}
+
+function revelar() { revelado = true; desenhar(); }
+
+// 0 = errei, 1 = quase, 2 = sabia
+function responder(nota) {
+  const id = atual.id;
+  const e = progresso[id] || { n: 0, q: 0 };
+
+  if (nota === 0) {
+    e.n = 0;
+    e.q = hoje();
+    fila.push(fila.shift());           // volta ainda nesta sessao
+  } else if (nota === 1) {
+    e.q = emDias(1);
+    fila.shift();
+    feitosNaSessao++;
+  } else {
+    e.n = Math.min(e.n + 1, NIVEL_MAX);
+    e.q = emDias(INTERVALOS[e.n]);
+    fila.shift();
+    feitosNaSessao++;
+  }
+
+  progresso[id] = e;
+  salvar();
+
+  if (nota === 0) { revelado = false; desenhar(); }
+  else proximo();
+}
+
+function telaFim() {
+  palco.innerHTML =
+    '<div class="fim"><div class="rotulo">Sessão concluída</div>' +
+    '<div class="nota">' + totalDaSessao + '</div>' +
+    "<p>cards revisados. Os que você acertou só voltam daqui a alguns dias — os que errou reaparecem amanhã.</p></div>";
+  const acoes = document.createElement("div");
+  acoes.className = "acoes";
+  acoes.style.justifyContent = "center";
+  acoes.appendChild(botaoVoltar());
+  palco.appendChild(acoes);
+}
+
+function botaoVoltar() {
+  const b = document.createElement("button");
+  b.className = "botao vazado";
+  b.type = "button";
+  b.textContent = "← Escolher matéria";
+  b.addEventListener("click", telaMaterias);
+  return b;
+}
+
+document.addEventListener("keydown", ev => {
+  if (!atual) return;
+  if (!revelado && (ev.code === "Space" || ev.code === "Enter")) { ev.preventDefault(); revelar(); }
+  else if (revelado && ["1","2","3"].includes(ev.key)) { ev.preventDefault(); responder(+ev.key - 1); }
+});
+
+// ---------------- carga ----------------
+carregar();
+fetch("cards.json")
+  .then(r => { if (!r.ok) throw new Error("HTTP " + r.status); return r.json(); })
+  .then(dados => {
+    BASE = dados.map(m => ({
+      materia: m.materia,
+      cards: m.cards.map(c => Object.assign({}, c, { id: idDe(m.materia, c.p) }))
+    }));
+    const total = BASE.reduce((s, m) => s + m.cards.length, 0);
+    rodapeInfo.innerHTML = total + ' cards · <button type="button" id="zerar">zerar progresso</button>';
+    document.getElementById("zerar").addEventListener("click", () => {
+      if (confirm("Apagar todo o progresso salvo neste navegador?")) {
+        progresso = {}; salvar(); telaMaterias();
+      }
+    });
+    telaMaterias();
+  })
+  .catch(err => {
+    palco.innerHTML = '<div class="card"><div class="frente">Não consegui carregar os cards.</div>' +
+      '<div class="verso">' + err.message + '<br><br>Se você abriu o arquivo direto do computador, ' +
+      'use o endereço do site — o navegador bloqueia leitura de arquivo local.</div></div>';
+  });
+</script>
+</body>
+</html>

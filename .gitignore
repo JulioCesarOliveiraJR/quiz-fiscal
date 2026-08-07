@@ -2,3 +2,6 @@
 subir.ps1
 _fonte-artifact.html
 cloudflared.log
+
+# nota: cards/cards.json e gerado pelo gerar-cards.ps1 a partir do vault,
+# mas E versionado de proposito — o site precisa dele para funcionar.
