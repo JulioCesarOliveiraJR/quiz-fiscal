@@ -1,0 +1,475 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<meta name="description" content="Simulado de resposta aberta - escreva a resposta antes de ver o gabarito">
+<title>Simulado — resposta aberta</title>
+
+<style>
+  :root {
+    --tinta:#1E3A6E; --tinta-fraca:#5B7099; --rosa:#D6246E; --verde:#2FBF9E;
+    --laranja:#E8873A; --papel:#FAFAF8; --fundo:#EEF0F4; --pauta:#C9D4E2;
+    --anel:#D3D8DF; --borda:#DFE4EC; --sombra:rgba(30,58,110,.10);
+    --sans: ui-sans-serif, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    --mono: ui-monospace, "Cascadia Mono", "Cascadia Code", Consolas, "SF Mono", Menlo, monospace;
+    --pauta-alt: 32px;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root { --tinta:#DCE6F5; --tinta-fraca:#8DA1C4; --rosa:#FF7BAE; --verde:#4FD8B6;
+      --laranja:#F2A059; --papel:#1B2430; --fundo:#121821; --pauta:#2A3646;
+      --anel:#313D4E; --borda:#2B3746; --sombra:rgba(0,0,0,.40); }
+  }
+  :root[data-theme="dark"] { --tinta:#DCE6F5; --tinta-fraca:#8DA1C4; --rosa:#FF7BAE;
+    --verde:#4FD8B6; --laranja:#F2A059; --papel:#1B2430; --fundo:#121821;
+    --pauta:#2A3646; --anel:#313D4E; --borda:#2B3746; --sombra:rgba(0,0,0,.40); }
+  :root[data-theme="light"] { --tinta:#1E3A6E; --tinta-fraca:#5B7099; --rosa:#D6246E;
+    --verde:#2FBF9E; --laranja:#E8873A; --papel:#FAFAF8; --fundo:#EEF0F4;
+    --pauta:#C9D4E2; --anel:#D3D8DF; --borda:#DFE4EC; --sombra:rgba(30,58,110,.10); }
+
+  * { box-sizing: border-box; }
+  body {
+    margin:0; padding: clamp(12px,3vw,40px) clamp(8px,3vw,24px);
+    background: var(--fundo); font-family: var(--sans); color: var(--tinta);
+    -webkit-font-smoothing: antialiased; line-height: 1.6;
+  }
+  .folha {
+    max-width: 680px; margin: 0 auto; background: var(--papel);
+    border: 1px solid var(--borda); border-radius: 3px;
+    box-shadow: 0 1px 2px var(--sombra), 0 12px 32px -18px var(--sombra);
+    display: grid; grid-template-columns: 46px 1fr; overflow: hidden;
+  }
+  .espiral {
+    background-image: radial-gradient(circle at 50% 50%, var(--anel) 0 4.5px, transparent 5px);
+    background-size: 100% 42px; background-repeat: repeat-y; background-position: 0 22px;
+    border-right: 1px solid var(--pauta);
+  }
+  .corpo { padding: clamp(20px,4vw,34px) clamp(16px,4vw,34px) clamp(22px,4vw,32px); min-width: 0; }
+
+  .rotulo { font-family: var(--mono); font-size:10.5px; letter-spacing:.17em;
+            text-transform: uppercase; color: var(--tinta-fraca); font-variant-numeric: tabular-nums; }
+  .cabecalho { border-bottom: 1.5px solid var(--rosa); padding-bottom: 14px; margin-bottom: 20px; }
+  .cabecalho h1 { font-size: clamp(21px,4.4vw,27px); line-height:1.2; letter-spacing:-.019em;
+                  font-weight: 680; color: var(--rosa); margin: 7px 0 0; text-wrap: balance; }
+  .subtitulo { font-size: 14px; color: var(--tinta-fraca); margin: 7px 0 0; max-width: 50ch; }
+
+  /* ---------- montagem do simulado ---------- */
+  .campo { margin-top: 20px; }
+  .campo > .rotulo { display:block; margin-bottom: 8px; }
+  .opcoes-linha { display: flex; flex-wrap: wrap; gap: 7px; }
+  .pilula {
+    font: inherit; font-size: 14px; color: var(--tinta); background: transparent;
+    border: 1.5px solid var(--borda); border-radius: 999px; padding: 7px 15px; cursor: pointer;
+    transition: border-color .15s, background .15s, color .15s;
+  }
+  .pilula:hover { border-color: var(--tinta-fraca); }
+  .pilula[aria-pressed="true"] { border-color: var(--rosa); background: color-mix(in srgb, var(--rosa) 12%, transparent); color: var(--rosa); font-weight: 600; }
+  .pilula:focus-visible { outline: 2.5px solid var(--laranja); outline-offset: 2px; }
+  .pilula:disabled { opacity: .35; cursor: not-allowed; }
+
+  select.pilula { border-radius: 4px; padding: 9px 12px; width: 100%; max-width: 100%; }
+
+  .aviso { margin-top: 18px; font-size: 13.5px; color: var(--tinta-fraca); border-left: 3px solid var(--laranja);
+           padding: 9px 13px; background: color-mix(in srgb, var(--laranja) 7%, transparent); border-radius: 0 4px 4px 0; }
+
+  /* ---------- questão ---------- */
+  .painel { display:flex; align-items:baseline; justify-content:space-between; gap:12px; margin-bottom:14px; flex-wrap:wrap; }
+  .secao { font-family: var(--mono); font-size:10.5px; letter-spacing:.13em; text-transform: uppercase; color: var(--rosa); }
+  .barra { height: 7px; background: var(--pauta); border-radius: 1px 3px 2px 4px; overflow: hidden; margin-bottom: 22px; }
+  .barra > i { display:block; height:100%; width:0; background: var(--laranja); opacity:.85;
+               transition: width .35s cubic-bezier(.2,.8,.3,1); }
+
+  .pergunta { font-size: clamp(17px,3.3vw,19.5px); line-height:1.45; font-weight:600;
+              letter-spacing:-.012em; margin: 0 0 16px; text-wrap: pretty; }
+
+  textarea.resposta {
+    width: 100%; min-height: calc(var(--pauta-alt) * 5); resize: vertical;
+    font: inherit; font-size: 15.5px; line-height: var(--pauta-alt); color: var(--tinta);
+    border: 1.5px solid var(--borda); border-radius: 4px;
+    padding: 6px 14px 10px; background-color: transparent;
+    background-image: repeating-linear-gradient(to bottom,
+      transparent 0 calc(var(--pauta-alt) - 1px), var(--pauta) calc(var(--pauta-alt) - 1px) var(--pauta-alt));
+    background-position: 0 7px;
+  }
+  textarea.resposta:focus { outline: none; border-color: var(--rosa); }
+  textarea.resposta::placeholder { color: var(--tinta-fraca); opacity: .7; }
+
+  .dica { margin-top: 10px; font-family: var(--mono); font-size:10.5px; letter-spacing:.1em;
+          text-transform: uppercase; color: var(--tinta-fraca); }
+
+  /* ---------- comparação ---------- */
+  .bloco { margin-top: 18px; border-radius: 4px; padding: 14px 16px; animation: surgir .25s ease-out; }
+  @keyframes surgir { from { opacity:0; transform: translateY(-4px); } }
+  .bloco .titulo { font-family: var(--mono); font-size:10.5px; letter-spacing:.13em;
+                   text-transform: uppercase; margin-bottom: 8px; font-weight:600; }
+  .bloco.minha { border: 1.5px dashed var(--borda); }
+  .bloco.minha .titulo { color: var(--tinta-fraca); }
+  .bloco.minha .texto { white-space: pre-wrap; font-size: 15px; line-height:1.6; }
+  .bloco.minha .vazio { color: var(--tinta-fraca); font-style: italic; }
+  .bloco.gabarito { border-left: 3px solid var(--verde); background: color-mix(in srgb, var(--verde) 8%, transparent); }
+  .bloco.gabarito .titulo { color: var(--verde); }
+  .bloco.gabarito .texto { font-size: 15.5px; line-height:1.62; }
+  .bloco .texto strong { font-weight: 660; }
+  .bloco .texto code { font-family: var(--mono); font-size:.9em; background: color-mix(in srgb, var(--tinta) 8%, transparent); padding:1px 5px; border-radius:3px; }
+
+  /* ---------- botões ---------- */
+  .acoes { margin-top: 18px; display: flex; gap: 8px; }
+  .botao { flex:1; font: inherit; font-size: 14.5px; font-weight: 600;
+    color: var(--papel); background: var(--tinta); border: none; border-radius: 4px;
+    padding: 13px 16px; cursor: pointer; transition: opacity .15s, transform .1s; }
+  .botao:hover { opacity:.87; } .botao:active { transform: translateY(1px); }
+  .botao:focus-visible { outline: 2.5px solid var(--laranja); outline-offset: 2px; }
+  .botao .tecla { display:block; font-family: var(--mono); font-size:10px; letter-spacing:.1em; opacity:.65; font-weight:500; margin-top:2px; }
+  .botao.errei { background: var(--rosa); }
+  .botao.parcial { background: var(--laranja); }
+  .botao.acertei { background: var(--verde); color:#08312a; }
+  .botao.vazado { background: transparent; color: var(--tinta); border: 1.5px solid var(--borda); }
+  .botao.vazado:hover { border-color: var(--tinta-fraca); opacity:1; }
+
+  /* ---------- resultado ---------- */
+  .fim { text-align:center; padding: 8px 0 4px; }
+  .fim .nota { font-family: var(--mono); font-size: clamp(42px,11vw,58px); font-weight:700;
+               line-height:1; letter-spacing:-.04em; color: var(--rosa); font-variant-numeric: tabular-nums; }
+  .fim .de { font-size:.42em; color: var(--tinta-fraca); font-weight:500; }
+  .fim .recado { font-size: 15.5px; margin: 13px auto 0; max-width: 42ch; text-wrap: pretty; }
+  .fim .tempo { margin-top: 10px; font-family: var(--mono); font-size:11px; letter-spacing:.1em;
+                text-transform: uppercase; color: var(--tinta-fraca); }
+
+  .revisao { margin-top: 26px; border-top: 1.5px solid var(--borda); padding-top: 16px; }
+  .revisao ol { list-style:none; margin: 10px 0 0; padding:0; }
+  .revisao li { display:flex; align-items:baseline; gap:11px; padding:8px 0;
+                font-size:14.5px; border-bottom: 1px solid var(--borda); }
+  .revisao li:last-child { border-bottom:none; }
+  .marca { font-family: var(--mono); font-size:13px; font-weight:700; flex:none; width:1.2em; }
+  .marca.ok { color: var(--verde); } .marca.mais-ou-menos { color: var(--laranja); } .marca.nao { color: var(--rosa); }
+  .revisao .q { flex:1; }
+  .revisao .mt { font-family: var(--mono); font-size:10px; letter-spacing:.08em;
+                 text-transform: uppercase; color: var(--tinta-fraca); flex:none; }
+
+  .rodape { max-width: 680px; margin: 16px auto 0; display:flex; justify-content:space-between; gap:12px;
+            flex-wrap:wrap; font-family: var(--mono); font-size:10.5px; letter-spacing:.11em;
+            text-transform: uppercase; color: var(--tinta-fraca); }
+  .rodape a { color: inherit; }
+
+  @media (max-width: 480px) {
+    .folha { grid-template-columns: 26px 1fr; }
+    .espiral { background-size: 100% 36px; }
+    .acoes { flex-direction: column; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { animation-duration:.01ms !important; transition-duration:.01ms !important; }
+  }
+</style>
+</head>
+<body>
+
+<main class="folha">
+  <div class="espiral" aria-hidden="true"></div>
+  <div class="corpo">
+    <header class="cabecalho">
+      <div class="rotulo" id="topo-rotulo">Vault de estudos</div>
+      <h1 id="topo-titulo">Simulado</h1>
+      <p class="subtitulo" id="topo-sub">Escreva a resposta <strong>antes</strong> de ver o gabarito. Reconhecer é fácil; produzir do zero é o que a prova cobra.</p>
+    </header>
+    <div id="palco" aria-live="polite"></div>
+  </div>
+</main>
+
+<div class="rodape">
+  <span><a href="../cards/">← cards</a> · <a href="../">quiz da aula 1</a></span>
+  <span id="rodape-info"></span>
+</div>
+
+<script>
+const CAMINHO = "../cards/cards.json";
+let BASE = [], filtroMateria = null, soEstrela = false, quantidade = 10;
+let fila = [], atual = null, revelado = false, feitos = 0, total = 0, inicio = 0;
+const registro = [];
+
+const palco      = document.getElementById("palco");
+const topoRotulo = document.getElementById("topo-rotulo");
+const topoTitulo = document.getElementById("topo-titulo");
+const topoSub    = document.getElementById("topo-sub");
+const rodapeInfo = document.getElementById("rodape-info");
+
+const ehEstrela = c => /⭐/.test(c.p);
+const limpar    = t => t.replace(/⭐+/g, "").replace(/\s+([?:.])/g, "$1").trim();
+
+function elenco() {
+  let cs = filtroMateria ? BASE.find(m => m.materia === filtroMateria).cards : BASE.flatMap(m => m.cards);
+  if (soEstrela) cs = cs.filter(ehEstrela);
+  return cs;
+}
+
+// ---------------- montagem ----------------
+function telaMontagem() {
+  atual = null;
+  topoRotulo.textContent = "Vault de estudos";
+  topoTitulo.textContent = "Simulado";
+  topoSub.innerHTML = "Escreva a resposta <strong>antes</strong> de ver o gabarito. Reconhecer é fácil; produzir do zero é o que a prova cobra.";
+  palco.innerHTML = "";
+
+  // matéria
+  const c1 = document.createElement("div");
+  c1.className = "campo";
+  c1.innerHTML = '<span class="rotulo">Matéria</span>';
+  const sel = document.createElement("select");
+  sel.className = "pilula";
+  sel.innerHTML = '<option value="">Todas as matérias</option>' +
+    BASE.map(m => '<option value="' + m.materia + '">' + m.materia + " (" + m.cards.length + ")</option>").join("");
+  sel.value = filtroMateria || "";
+  sel.addEventListener("change", () => { filtroMateria = sel.value || null; telaMontagem(); });
+  c1.appendChild(sel);
+  palco.appendChild(c1);
+
+  // só as ⭐
+  const c2 = document.createElement("div");
+  c2.className = "campo";
+  c2.innerHTML = '<span class="rotulo">Quais questões</span>';
+  const linha2 = document.createElement("div");
+  linha2.className = "opcoes-linha";
+  [["Todas", false], ["Só as marcadas ⭐", true]].forEach(([txt, val]) => {
+    const b = document.createElement("button");
+    b.className = "pilula"; b.type = "button";
+    b.textContent = txt;
+    b.setAttribute("aria-pressed", String(soEstrela === val));
+    b.addEventListener("click", () => { soEstrela = val; telaMontagem(); });
+    linha2.appendChild(b);
+  });
+  c2.appendChild(linha2);
+  palco.appendChild(c2);
+
+  const disponiveis = elenco().length;
+
+  // quantas
+  const c3 = document.createElement("div");
+  c3.className = "campo";
+  c3.innerHTML = '<span class="rotulo">Quantas questões</span>';
+  const linha3 = document.createElement("div");
+  linha3.className = "opcoes-linha";
+  [5, 10, 20, 0].forEach(n => {
+    const b = document.createElement("button");
+    b.className = "pilula"; b.type = "button";
+    b.textContent = n === 0 ? "Todas (" + disponiveis + ")" : String(n);
+    b.disabled = n !== 0 && n > disponiveis;
+    b.setAttribute("aria-pressed", String(quantidade === n));
+    b.addEventListener("click", () => { quantidade = n; telaMontagem(); });
+    linha3.appendChild(b);
+  });
+  c3.appendChild(linha3);
+  palco.appendChild(c3);
+
+  if (!disponiveis) {
+    const av = document.createElement("div");
+    av.className = "aviso";
+    av.textContent = "Nenhuma questão com esse filtro. Tente 'Todas' ou outra matéria.";
+    palco.appendChild(av);
+    return;
+  }
+
+  const acoes = document.createElement("div");
+  acoes.className = "acoes";
+  const b = document.createElement("button");
+  b.className = "botao"; b.type = "button";
+  const n = quantidade === 0 ? disponiveis : Math.min(quantidade, disponiveis);
+  b.textContent = "Começar — " + n + (n === 1 ? " questão" : " questões");
+  b.addEventListener("click", () => comecar(elenco()));
+  acoes.appendChild(b);
+  palco.appendChild(acoes);
+}
+
+function comecar(cards) {
+  const baralho = cards.slice();
+  for (let i = baralho.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [baralho[i], baralho[j]] = [baralho[j], baralho[i]];
+  }
+  fila = quantidade === 0 ? baralho : baralho.slice(0, quantidade);
+  total = fila.length; feitos = 0; registro.length = 0; inicio = Date.now();
+  topoRotulo.textContent = filtroMateria || "Todas as matérias";
+  topoTitulo.textContent = "Simulado em andamento";
+  topoSub.textContent = "";
+  proxima();
+}
+
+function proxima() {
+  if (!fila.length) return telaFim();
+  atual = fila.shift();
+  revelado = false;
+  desenhar("");
+}
+
+function desenhar(textoAtual) {
+  palco.innerHTML = "";
+
+  const painel = document.createElement("div");
+  painel.className = "painel";
+  painel.innerHTML = '<span class="secao">' + (atual.s || "—") + "</span>" +
+                     '<span class="rotulo">' + (feitos + 1) + " de " + total + "</span>";
+  palco.appendChild(painel);
+
+  const barra = document.createElement("div");
+  barra.className = "barra";
+  const i = document.createElement("i");
+  i.style.width = (total ? (feitos / total) * 100 : 0) + "%";
+  barra.appendChild(i);
+  palco.appendChild(barra);
+
+  const p = document.createElement("h2");
+  p.className = "pergunta";
+  p.innerHTML = limpar(atual.p);
+  palco.appendChild(p);
+
+  if (!revelado) {
+    const ta = document.createElement("textarea");
+    ta.className = "resposta";
+    ta.placeholder = "Escreva aqui, de cabeça, sem consultar...";
+    ta.value = textoAtual;
+    ta.setAttribute("aria-label", "Sua resposta");
+    palco.appendChild(ta);
+
+    const acoes = document.createElement("div");
+    acoes.className = "acoes";
+    const b = document.createElement("button");
+    b.className = "botao"; b.type = "button";
+    b.innerHTML = 'Ver gabarito<span class="tecla">ctrl + enter</span>';
+    b.addEventListener("click", () => revelar(ta.value));
+    acoes.appendChild(b);
+    palco.appendChild(acoes);
+
+    const d = document.createElement("p");
+    d.className = "dica";
+    d.textContent = "vale escrever pouco — mas escreva antes de olhar";
+    palco.appendChild(d);
+
+    ta.addEventListener("keydown", ev => {
+      if ((ev.ctrlKey || ev.metaKey) && ev.key === "Enter") { ev.preventDefault(); revelar(ta.value); }
+    });
+    ta.focus();
+  } else {
+    const minha = document.createElement("div");
+    minha.className = "bloco minha";
+    minha.innerHTML = '<div class="titulo">Sua resposta</div><div class="texto">' +
+      (textoAtual.trim()
+        ? textoAtual.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;")
+        : '<span class="vazio">(em branco)</span>') + "</div>";
+    palco.appendChild(minha);
+
+    const gab = document.createElement("div");
+    gab.className = "bloco gabarito";
+    gab.innerHTML = '<div class="titulo">Gabarito</div><div class="texto">' + atual.r + "</div>";
+    palco.appendChild(gab);
+
+    const acoes = document.createElement("div");
+    acoes.className = "acoes";
+    [["errei","Errei","1"],["parcial","Parcial","2"],["acertei","Acertei","3"]].forEach(([cls, txt, tecla], idx) => {
+      const b = document.createElement("button");
+      b.className = "botao " + cls; b.type = "button";
+      b.innerHTML = txt + '<span class="tecla">' + tecla + "</span>";
+      b.addEventListener("click", () => avaliar(idx));
+      acoes.appendChild(b);
+    });
+    palco.appendChild(acoes);
+
+    const d = document.createElement("p");
+    d.className = "dica";
+    d.textContent = "seja honesta — 'parcial' é quando faltou parte da resposta";
+    palco.appendChild(d);
+    acoes.firstChild.focus();
+  }
+}
+
+function revelar(texto) { revelado = true; desenhar(texto); }
+
+// 0 errei · 1 parcial · 2 acertei
+function avaliar(nota) {
+  registro.push({ q: limpar(atual.p), s: atual.s, nota: nota });
+  feitos++;
+  proxima();
+}
+
+function telaFim() {
+  const acertos = registro.filter(r => r.nota === 2).length;
+  const parciais = registro.filter(r => r.nota === 1).length;
+  const seg = Math.max(1, Math.round((Date.now() - inicio) / 1000));
+  const min = Math.floor(seg / 60), resto = seg % 60;
+
+  const pct = total ? acertos / total : 0;
+  const recado =
+    pct === 1     ? "Gabaritou escrevendo do zero. Isso é bem diferente de reconhecer no card." :
+    pct >= 0.8    ? "Bom domínio. Revise os que ficaram parciais — normalmente falta um item da lista." :
+    pct >= 0.5    ? "Metade sai de cabeça. Os que errou merecem voltar pelo caderno, não só pelo card." :
+                    "Vale reler as notas da matéria antes de repetir. Errar aqui é barato; na prova não.";
+
+  palco.innerHTML = "";
+  const fim = document.createElement("div");
+  fim.className = "fim";
+  fim.innerHTML =
+    '<div class="rotulo">Resultado</div>' +
+    '<div class="nota">' + acertos + '<span class="de">/' + total + "</span></div>" +
+    '<p class="recado">' + recado + "</p>" +
+    '<div class="tempo">' + (min ? min + " min " : "") + resto + " s" +
+      (parciais ? " · " + parciais + (parciais === 1 ? " parcial" : " parciais") : "") + "</div>";
+  palco.appendChild(fim);
+
+  const rev = document.createElement("div");
+  rev.className = "revisao";
+  rev.innerHTML = '<div class="rotulo">Questão por questão</div>';
+  const ol = document.createElement("ol");
+  registro.forEach(r => {
+    const li = document.createElement("li");
+    const cls = r.nota === 2 ? "ok" : r.nota === 1 ? "mais-ou-menos" : "nao";
+    const mk  = r.nota === 2 ? "✓" : r.nota === 1 ? "~" : "✕";
+    li.innerHTML = '<span class="marca ' + cls + '">' + mk + "</span>" +
+                   '<span class="q">' + r.q + "</span>" +
+                   '<span class="mt">' + (r.s || "") + "</span>";
+    ol.appendChild(li);
+  });
+  rev.appendChild(ol);
+  palco.appendChild(rev);
+
+  const acoes = document.createElement("div");
+  acoes.className = "acoes";
+
+  const falhas = registro.filter(r => r.nota !== 2).map(r => r.q);
+  if (falhas.length) {
+    const b1 = document.createElement("button");
+    b1.className = "botao"; b1.type = "button";
+    b1.textContent = "Refazer só as " + falhas.length + " que faltaram";
+    b1.addEventListener("click", () => {
+      const conj = new Set(falhas);
+      const cards = elenco().filter(c => conj.has(limpar(c.p)));
+      quantidade = 0;
+      comecar(cards);
+    });
+    acoes.appendChild(b1);
+  }
+
+  const b2 = document.createElement("button");
+  b2.className = "botao vazado"; b2.type = "button";
+  b2.textContent = "Novo simulado";
+  b2.addEventListener("click", telaMontagem);
+  acoes.appendChild(b2);
+  palco.appendChild(acoes);
+}
+
+// ---------------- carga ----------------
+fetch(CAMINHO)
+  .then(r => { if (!r.ok) throw new Error("HTTP " + r.status); return r.json(); })
+  .then(dados => {
+    BASE = dados;
+    const t = BASE.reduce((s, m) => s + m.cards.length, 0);
+    const e = BASE.flatMap(m => m.cards).filter(ehEstrela).length;
+    rodapeInfo.textContent = t + " questões · " + e + " marcadas ⭐";
+    telaMontagem();
+  })
+  .catch(err => {
+    palco.innerHTML = '<div class="bloco minha"><div class="titulo">Erro</div><div class="texto">' +
+      "Não consegui carregar as questões (" + err.message + ").<br><br>" +
+      "Se você abriu o arquivo direto do computador, use o endereço do site — " +
+      "o navegador bloqueia leitura de arquivo local.</div></div>";
+  });
+</script>
+</body>
+</html>
