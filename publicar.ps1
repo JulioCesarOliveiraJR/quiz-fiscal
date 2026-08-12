@@ -64,21 +64,32 @@ Write-Host "`n[4/4] Enviando e aguardando o site..." -ForegroundColor Cyan
 git -C $Repo push
 if ($LASTEXITCODE -ne 0) { throw "push falhou" }
 
-$alvo = "$Site/cards/cards.json"
+# Conferir pelo SHA do build do Pages, e nao pelo conteudo: quando so o HTML
+# muda, a contagem de cards continua igual e o script daria "no ar" cedo demais.
+$sha = (git -C $Repo rev-parse HEAD).Trim()
 $ok = $false
-for ($i = 1; $i -le 20 -and -not $ok; $i++) {
+$estado = 'desconhecido'
+
+for ($i = 1; $i -le 25 -and -not $ok; $i++) {
   Start-Sleep -Seconds 6
   try {
-    $r = Invoke-WebRequest $alvo -UseBasicParsing -TimeoutSec 10 -Headers @{ 'Cache-Control' = 'no-cache' }
-    $n = (($r.Content | ConvertFrom-Json).cards | Measure-Object).Count
-    if ($n -eq $agora) { $ok = $true }
+    $b = gh api repos/JulioCesarOliveiraJR/quiz-fiscal/pages/builds/latest 2>$null | ConvertFrom-Json
+    $estado = $b.status
+    if ($b.commit -eq $sha -and $b.status -eq 'built') { $ok = $true }
+    elseif ($b.commit -eq $sha -and $b.status -eq 'errored') {
+      Write-Host "`n  BUILD FALHOU: $($b.error.message)" -ForegroundColor Red
+      return
+    }
   } catch { }
 }
 
 Write-Host ''
 if ($ok) {
-  Write-Host "  NO AR com $agora cards:  $Site/cards/" -ForegroundColor Green
+  Write-Host "  NO AR ($agora cards):" -ForegroundColor Green
+  Write-Host "    $Site/           quiz"
+  Write-Host "    $Site/cards/     cards"
+  Write-Host "    $Site/simulado/  simulado"
 } else {
-  Write-Host "  Enviado, mas o site ainda serve a versao antiga." -ForegroundColor Yellow
-  Write-Host "  O GitHub Pages costuma levar ate ~2 min. Confira em: $Site/cards/"
+  Write-Host "  Enviado, mas o build do Pages ainda nao terminou (estado: $estado)." -ForegroundColor Yellow
+  Write-Host "  Costuma levar ate ~2 min. Confira em: $Site/"
 }
