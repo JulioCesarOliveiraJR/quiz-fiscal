@@ -382,8 +382,10 @@ function responder(nota) {
   progresso[id] = e;
   salvar();
 
-  if (nota === 0) { revelado = false; desenhar(); }
-  else proximo();
+  // Sempre por proximo(): e ele que reaponta `atual` para o topo da fila.
+  // Antes, o caso "Errei" chamava desenhar() direto e a pergunta nao trocava,
+  // porque `atual` continuava sendo o mesmo card.
+  proximo();
 }
 
 function telaFim() {
